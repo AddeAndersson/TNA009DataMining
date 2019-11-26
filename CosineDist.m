@@ -1,5 +1,5 @@
-function [columns] = CosineDist(query, A, tol)
-    columns = (query'*full(A))/(norm(full(A)) * norm(query)) > tol;
-    columns = sparse(columns);
+function [columns] = CosineDist(query, A)
+    columns = (query'*full(A))./(vecnorm(full(A)) .* norm(query));
+    %columns = sparse(columns);
 end
 

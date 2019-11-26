@@ -2,25 +2,41 @@
 %TNA009: Computational Methods for Science and Engineering
 %Description: Data Mining Project using LGK and K-Means clustering
 
-<<<<<<< HEAD
-load 'data/text-mining-medline_stemmed.mat'
-
-A_norm = normalize(A)
-=======
 %Load data: A is the abstracts, q is the queries, and dict is a dictionary.
 %The terms are weighted.
 load 'data/text-mining-medline_stemmed.mat';
-plot(A(:,1:500), '.k')
+
+%plot(A(:,1:500), '.k')
 
 %% Query Matching
+clc
 
-tol = 0.19;
-
-
-
-
+tol = 0.17;
+Match = CosineDist(q(:,9), A) > tol;
+i = Match > 0;
 %% K-Means clustering
 %Should K be equal to the number of documents?
+A_norm = normalize(full(A));
+
+%Set amount of clusters
+k = 50;
+
+%Cluster, idx contains labels with cluster index, C contains centroids
+[idx, C]= kmeans(A_norm', k);
+C = normalize(C'); idx = idx';
+
+%Compute the thin-QR
+[Q, R] = qr(C,0);
+
+%Create G_k
+G_k = Q'*A_norm;
+
+%Transform query
+q_k = Q'*q(:,9);
+
+dist = CosineDist(q_k, G_k);
+[Min, Ind] = min(dist);
+Ind
 
 %% LGK
->>>>>>> bde2374257b109de0499e964378bf21605c11dc6
+
