@@ -3,3 +3,7 @@ project-text-mining.pdf
 
 #Ignore folder containing data
 data/
+
+#Ignore .asv
+.asv
+m~
