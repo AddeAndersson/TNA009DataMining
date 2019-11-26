@@ -1,0 +1,5 @@
+#Ignore project description
+project-text-mining.pdf
+
+#Ignore folder containing data
+data/
