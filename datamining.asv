@@ -11,9 +11,9 @@ load 'data/text-mining-medline_stemmed.mat';
 %% Query Matching
 clc
 
-tol = 0.17;
-Match = CosineDist(q(:,9), A) > tol;
-i = Match > 0;
+tol = 0.19;
+Match = CosineDist(q(:,9), A);
+[Max, Docs] = m(Match > 0);
 %% K-Means clustering
 %Should K be equal to the number of documents?
 A_norm = normalize(full(A));
@@ -24,19 +24,19 @@ k = 50;
 %Cluster, idx contains labels with cluster index, C contains centroids
 [idx, C]= kmeans(A_norm', k);
 C = normalize(C'); idx = idx';
+histogram(idx)
 
 %Compute the thin-QR
-[Q, R] = qr(C,0);
+[P_k, R] = qr(C,0);
 
 %Create G_k
-G_k = Q'*A_norm;
+G_k = P_k'*A_norm;
 
 %Transform query
-q_k = Q'*q(:,9);
+q_k = P_k'*q(:,9);
 
-dist = CosineDist(q_k, G_k);
-[Min, Ind] = min(dist);
-Ind
-
+%Find closest cluster(?) in new vector space
+tol = 0.19;
+Match = CosineDist(q_k, G_k);
+[Max, Docs] = max(Match);
 %% LGK
-
