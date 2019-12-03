@@ -5,19 +5,27 @@
 %Load data: A is the abstracts, q is the queries, and dict is a dictionary.
 %The terms are weighted.
 load 'data/text-mining-medline_stemmed.mat';
-numberDocs = 3;
-%Plot(A(:,1:500), '.k')
+load 'data/MED.REL';
 
+%Create a matrix with relevant documents in each row corresponding to a
+%query
+RelDocs = zeros(39,30);
+for i = 1:30
+    len = length(find(MED(:,1) == i));
+    RelDocs(1:len,i) = MED(find(MED(:,1) == i),3);
+end
+
+numberDocs = 3;
 %% Query Matching
 
 tic
 
 %Compute distances between query and documents
-tol = 0.19;
-Match = CosineDist(q(:,9), A);
-
-%Find the 3 closest documents
-[~, Docs] = maxk(Match, numberDocs);
+% Match = CosineDist(q(:,9), A);
+% 
+% %Find the 3 closest documents
+% [~, Docs] = maxk(Match, numberDocs);
+Match = query_match(q())
 time = toc;
 fprintf('Query Matching executed in %4.4f seconds\n', time);
 fprintf('Query Matching found the %i most relevant documents to be: ', numberDocs);
@@ -25,7 +33,6 @@ fprintf('%i ', Docs);
 fprintf('\n');
 %% K-Means clustering
 %Should K be equal to the number of documents?
-tic
 
 A_norm = normalize(full(A));
 
@@ -40,6 +47,7 @@ C = normalize(C'); idx = idx';
 %Compute the thin-QR
 [P_k, R] = qr(C,0);
 
+tic
 %Create G_k
 G_k = P_k'*A_norm;
 
@@ -99,8 +107,10 @@ o = zeros(size(P*Q));
 o(1:k+1,1:k+1) = eye(k+1);
 W = P*Q*o';
 
-%Create q
+%Create qhat
 qhat = W*W'*q(:,9);
+
+%Find relevant documents
 Match = CosineDist(qhat, A);
 [~, Docs] = maxk(Match, numberDocs);
 
@@ -114,7 +124,7 @@ fprintf('\n');
 %Find text from query or doc
 
 %Query
-query_text = dict(find(q(:,9)),:);
+query_text = dict(find(q(:,9)),:)
 
 %Doc
-doc_text = dict(find(A(:,415)),:);
+doc_text = dict(find(A(:,409)),:)
