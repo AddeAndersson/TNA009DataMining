@@ -8,123 +8,66 @@ load 'data/text-mining-medline_stemmed.mat';
 load 'data/MED.REL';
 
 %Create a matrix with relevant documents in each row corresponding to a
-%query
+%query in each column
 RelDocs = zeros(39,30);
 for i = 1:30
     len = length(find(MED(:,1) == i));
     RelDocs(1:len,i) = MED(find(MED(:,1) == i),3);
 end
 
-numberDocs = 3;
+numberDocs = 10;
 %% Query Matching
-
 tic
-
-%Compute distances between query and documents
-% Match = CosineDist(q(:,9), A);
-% 
-% %Find the 3 closest documents
-% [~, Docs] = maxk(Match, numberDocs);
-Match = query_match(q())
-time = toc;
-fprintf('Query Matching executed in %4.4f seconds\n', time);
-fprintf('Query Matching found the %i most relevant documents to be: ', numberDocs);
-fprintf('%i ', Docs);
-fprintf('\n');
-%% K-Means clustering
-%Should K be equal to the number of documents?
-
-A_norm = normalize(full(A));
-
-%Set amount of clusters
-k = 50;
-
-%Cluster, idx contains labels with cluster index, C contains centroids
-[idx, C]= kmeans(A_norm', k);
-C = normalize(C'); idx = idx';
-%histogram(idx)
-
-%Compute the thin-QR
-[P_k, R] = qr(C,0);
-
-tic
-%Create G_k
-G_k = P_k'*A_norm;
-
-%Transform query
-q_k = P_k'*q(:,9);
-
-%Compute distances between query and documents
-tol = 0.19;
-Match = CosineDist(q_k, G_k);
-
-%Find the 3 closest documents in new vector space
-[~, Docs] = maxk(Match, numberDocs);
-time = toc;
-fprintf('K-Means executed in %4.4f seconds\n', time);
-fprintf('K-Means found the %i most relevant documents to be: ', numberDocs);
-fprintf('%i ', Docs);
-fprintf('\n');
-%% LGK
-tic
-
-k = 5;
-
-%Initial conditions
-beta(1) = norm(q(:,9));
-P(:,1) = q(:,9)/beta(1);
-
-%First iteration
-Z(:,1) = A'*P(:,1);
-alpha(1) = 1/norm(Z(:,1));
-Z(:,1) = alpha(1)*Z(:,1);
-
-P(:,2) = A*Z(:,1) - alpha(1)*P(:,1);
-beta(2) = 1/norm(P(:,2));
-P(:,2) = beta(2)*P(:,2);
-
-%Following iterations
-for i = 2:k
-    Z(:,i) = A'*P(:,i)-beta(i)*Z(:,i-1); %Determine Z
-    alpha(i) = 1/norm(Z(:,i)); %Determine alpha
-    Z(:,i) = alpha(i)*Z(:,i); %Scale Z to unit length
-    
-    P(:,i+1) = A*Z(:,i) - alpha(i)*P(:,i); %Determine P
-    beta(i+1) = 1/norm(P(:,i+1)); %Determine beta
-    P(:,i+1) = beta(i+1)*P(:,i+1); %Scale P to unit length
+for i = 1:10
+    query = q(:,9);
+    Docs = query_match(query, A, i);
+    [p_qm(i), r_qm(i)] = precision_recall(Docs, RelDocs(:,i));
 end
 
-%Create diagonal matrix B of alpha and beta
-B = diag(beta(2:end), -1);
-B(1:k,1:k) = B(1:k,1:k) + diag(alpha);
-B = B(1:k+1,1:k);
-
-%Perform  a QR decomposition of B
-[Q, Bhat] = qr(B);
-
-%Create W
-o = zeros(size(P*Q));
-o(1:k+1,1:k+1) = eye(k+1);
-W = P*Q*o';
-
-%Create qhat
-qhat = W*W'*q(:,9);
-
-%Find relevant documents
-Match = CosineDist(qhat, A);
-[~, Docs] = maxk(Match, numberDocs);
-
 time = toc;
-fprintf('LGK executed in %4.4f seconds\n', time);
-fprintf('LGK found the %i most relevant documents to be: ', numberDocs);
-fprintf('%i ', Docs);
-fprintf('\n');
+
+% fprintf('Query Matching executed in %4.4f seconds\n', time);
+% fprintf('Query Matching found the %i most relevant documents to be: ', numberDocs);
+% fprintf('%i ', Docs);
+% fprintf('\n');
+%% K-Means Clustering
+%Should K be equal to the number of documents?
+for i = 1:10
+    query = q(:,9);
+    [Docs, time] = cluster_match(query, A, i);
+    [p_cm(i), r_cm(i)] = precision_recall(Docs, RelDocs(:,i));
+end
+% fprintf('K-Means executed in %4.4f seconds\n', time);
+% fprintf('K-Means found the %i most relevant documents to be: ', numberDocs);
+% fprintf('%i ', Docs);
+% fprintf('\n');
+%% Lanczos-Golub-Kahan Bidiagonalization
+tic
+for i = 1:30
+    query = q(:,9);
+    Docs = lgk_match(query, A, numberDocs);
+    [p_lgk(i), r_lgk(i)] = precision_recall(Docs, RelDocs(:,i));
+end
+time = toc;
+
+% fprintf('LGK executed in %4.4f seconds\n', time);
+% fprintf('LGK found the %i most relevant documents to be: ', numberDocs);
+% fprintf('%i ', Docs);
+% fprintf('\n');
 %% Etc
 
 %Find text from query or doc
 
 %Query
-query_text = dict(find(q(:,9)),:)
+query_text = dict(find(q(:,9)),:);
 
 %Doc
-doc_text = dict(find(A(:,409)),:)
+doc_text = dict(find(A(:,409)),:);
+%pr_cm = pr_cm';
+plot(r_qm, p_qm, '-*'); hold off
+%plot(r_cm, p_cm); hold on
+%plot(r_lgk, p_lgk); hold off
+axis([0 1 0 1]);
+legend('Query Matching', 'K-Means Clustering', 'LGK');
+xlabel('Recall'); ylabel('Precision');
+

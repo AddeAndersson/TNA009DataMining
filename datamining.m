@@ -8,46 +8,68 @@ load 'data/text-mining-medline_stemmed.mat';
 load 'data/MED.REL';
 
 %Create a matrix with relevant documents in each row corresponding to a
-%query
+%query in each column
 RelDocs = zeros(39,30);
 for i = 1:30
     len = length(find(MED(:,1) == i));
     RelDocs(1:len,i) = MED(find(MED(:,1) == i),3);
 end
 
-numberDocs = 3;
+numberDocs = 10;
 %% Query Matching
 tic
-Docs = query_match(q(:,9), A, numberDocs);
+
+for i = 1:28
+    query = q(:,9);
+    Docs = query_match(query, A, i);
+    [p_qm(i), r_qm(i)] = precision_recall(Docs, RelDocs(:,9));
+end
+
 time = toc;
 
-fprintf('Query Matching executed in %4.4f seconds\n', time);
-fprintf('Query Matching found the %i most relevant documents to be: ', numberDocs);
-fprintf('%i ', Docs);
-fprintf('\n');
-%% K-Means clustering
+% fprintf('Query Matching executed in %4.4f seconds\n', time);
+% fprintf('Query Matching found the %i most relevant documents to be: ', numberDocs);
+% fprintf('%i ', Docs);
+% fprintf('\n');
+%% K-Means Clustering
 %Should K be equal to the number of documents?
-
-[Docs, time] = cluster_match(q(:,9), A, numberDocs);
-fprintf('K-Means executed in %4.4f seconds\n', time);
-fprintf('K-Means found the %i most relevant documents to be: ', numberDocs);
-fprintf('%i ', Docs);
-fprintf('\n');
-%% LGK
+for i = 1:28
+    query = q(:,9);
+    [Docs, time] = cluster_match(query, A, i);
+    [p_cm(i), r_cm(i)] = precision_recall(Docs, RelDocs(:,9));
+end
+% fprintf('K-Means executed in %4.4f seconds\n', time);
+% fprintf('K-Means found the %i most relevant documents to be: ', numberDocs);
+% fprintf('%i ', Docs);
+% fprintf('\n');
+%% Lanczos-Golub-Kahan Bidiagonalization
 tic
-Docs = lgk_match(q(:,9), A, numberDocs);
+for i = 1:28
+    query = q(:,9);
+    Docs = lgk_match(query, A, i);
+    [p_lgk(i), r_lgk(i)] = precision_recall(Docs, RelDocs(:,9));
+end
 time = toc;
 
-fprintf('LGK executed in %4.4f seconds\n', time);
-fprintf('LGK found the %i most relevant documents to be: ', numberDocs);
-fprintf('%i ', Docs);
-fprintf('\n');
+% fprintf('LGK executed in %4.4f seconds\n', time);
+% fprintf('LGK found the %i most relevant documents to be: ', numberDocs);
+% fprintf('%i ', Docs);
+% fprintf('\n');
 %% Etc
 
 %Find text from query or doc
 
 %Query
-query_text = dict(find(q(:,9)),:)
+query_text = dict(find(q(:,9)),:);
 
 %Doc
-doc_text = dict(find(A(:,409)),:)
+doc_text = dict(find(A(:,409)),:);
+%pr_cm = pr_cm';
+plot(r_qm, p_qm, '-*r'); hold on
+plot(r_cm, p_cm, '--xg'); hold on
+plot(r_lgk, p_lgk, '-.ob'); hold off
+axis([0 1 0 1]);
+legend('Query Matching', 'K-Means Clustering', 'LGK');
+xlabel('Recall'); ylabel('Precision');
+title('Precision-Recall graph for Query 9');
+
