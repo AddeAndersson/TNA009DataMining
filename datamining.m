@@ -25,7 +25,6 @@ fprintf('%i ', Docs);
 fprintf('\n');
 %% K-Means clustering
 %Should K be equal to the number of documents?
-tic
 
 A_norm = normalize(full(A));
 
@@ -40,6 +39,7 @@ C = normalize(C'); idx = idx';
 %Compute the thin-QR
 [P_k, R] = qr(C,0);
 
+tic
 %Create G_k
 G_k = P_k'*A_norm;
 
@@ -116,7 +116,7 @@ fprintf('\n');
 %Find text from query or doc
 
 %Query
-query_text = dict(find(q(:,9)),:);
+query_text = dict(find(q(:,9)),:)
 
 %Doc
-doc_text = dict(find(A(:,415)),:);
+doc_text = dict(find(A(:,409)),:)
